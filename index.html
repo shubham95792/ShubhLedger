@@ -1,0 +1,224 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tejam | Crypto Portfolio Tracker</title>
+  <meta name="description" content="Track your crypto portfolio, holdings, and transactions in one high-performance dashboard.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="#">
+        <span class="brand-mark"></span>
+        <span class="brand-text">Tejam</span>
+      </a>
+      <nav class="main-nav">
+        <a href="#features">Features</a>
+        <a href="#preview">Live Preview</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <a class="btn btn-ghost" href="#">Connect Wallet</a>
+    </div>
+  </header>
+
+  <main>
+    <section id="home" class="snap-section hero-shell">
+      <div class="container">
+        <div class="hero">
+          <div class="hero-copy reveal-on-scroll">
+            <p class="eyebrow">Realtime Crypto Command Center</p>
+            <h1>Track Every Coin.<br>Own Every Move.</h1>
+            <p class="subtitle">Monitor total portfolio value, 24h P/L, and on-chain activity across wallets in one clean dashboard built for active investors.</p>
+            <div class="hero-cta">
+              <a class="btn btn-primary" href="#">Start Tracking Free</a>
+              <a class="btn btn-ghost" href="#preview">See Demo</a>
+            </div>
+            <ul class="hero-points">
+              <li>Multi-wallet sync</li>
+              <li>Auto transaction tagging</li>
+              <li>Live market updates</li>
+            </ul>
+          </div>
+
+          <div class="hero-panel reveal-on-scroll">
+            <div class="panel-head">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <p>Portfolio Snapshot</p>
+            </div>
+            <div class="metric-row">
+              <article class="metric">
+                <p>Total Value</p>
+                <h3 id="metricTotal">$126,428.91</h3>
+                <span id="metricTotalDelta" class="up">+6.24% today</span>
+              </article>
+              <article class="metric">
+                <p>24h P/L</p>
+                <h3 id="metricPnl">$4,882.44</h3>
+                <span id="metricPnlDelta" class="up">+$392.88 unrealized</span>
+              </article>
+            </div>
+            <div class="chart" id="heroChart"></div>
+            <div class="ticker-strip" id="heroTicker">
+              <span>BTC +2.1%</span>
+              <span>ETH +1.4%</span>
+              <span>SOL +3.8%</span>
+              <span>ARB -0.7%</span>
+            </div>
+          </div>
+        </div>
+        <div class="partner-marquee reveal-on-scroll" aria-label="Partner ecosystem">
+          <h3 class="partner-title">Supported Chains</h3>
+          <div class="partner-viewport">
+            <div class="partner-track">
+              <div class="partner-row">
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png" alt="Ethereum logo" loading="lazy"></span><span class="chain-name">Ethereum</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png" alt="Solana logo" loading="lazy"></span><span class="chain-name">Solana</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/info/logo.png" alt="Arbitrum logo" loading="lazy"></span><span class="chain-name">Arbitrum</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://assets.coingecko.com/coins/images/15279/large/casper.PNG" alt="Casper logo" loading="lazy"></span><span class="chain-name">Casper</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png" alt="Avalanche logo" loading="lazy"></span><span class="chain-name">Avalanche</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/info/logo.png" alt="Polygon logo" loading="lazy"></span><span class="chain-name">Polygon</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/linea/info/logo.png" alt="Linea logo" loading="lazy"></span><span class="chain-name">Linea</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/info/logo.png" alt="Optimism logo" loading="lazy"></span><span class="chain-name">Optimism</span></span>
+              </div>
+              <div class="partner-row" aria-hidden="true">
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png" alt="" loading="lazy"></span><span class="chain-name">Ethereum</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png" alt="" loading="lazy"></span><span class="chain-name">Solana</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/info/logo.png" alt="" loading="lazy"></span><span class="chain-name">Arbitrum</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://assets.coingecko.com/coins/images/15279/large/casper.PNG" alt="" loading="lazy"></span><span class="chain-name">Casper</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png" alt="" loading="lazy"></span><span class="chain-name">Avalanche</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/info/logo.png" alt="" loading="lazy"></span><span class="chain-name">Polygon</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/linea/info/logo.png" alt="" loading="lazy"></span><span class="chain-name">Linea</span></span>
+                <span class="chain-pill"><span class="chain-logo"><img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/info/logo.png" alt="" loading="lazy"></span><span class="chain-name">Optimism</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="snap-section section features-shell">
+      <div class="container reveal-on-scroll">
+      <div class="section-title-wrap">
+        <p class="eyebrow">Why Tejam</p>
+        <h2>Built for portfolio precision</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <h3>Unified Holdings</h3>
+          <p>Aggregate balances across exchanges and wallets for a single source of truth.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Smart Insights</h3>
+          <p>Spot top movers, concentration risk, and trend shifts before they impact returns.</p>
+        </article>
+        <article class="feature-card">
+          <h3>Transaction Timeline</h3>
+          <p>Auto-categorized buy, sell, swap, transfer, and staking activity in real time.</p>
+        </article>
+      </div>
+      </div>
+    </section>
+
+    <section id="preview" class="snap-section section preview-shell">
+      <div class="container reveal-on-scroll">
+      <div class="section-title-wrap">
+        <p class="eyebrow">Live Preview</p>
+        <h2>Clean activity feed, zero noise</h2>
+      </div>
+      <div class="preview-top">
+        <div class="segmented" role="tablist" aria-label="Time range">
+          <button class="seg-btn is-active" data-range="1d" type="button">1D</button>
+          <button class="seg-btn" data-range="7d" type="button">7D</button>
+          <button class="seg-btn" data-range="30d" type="button">30D</button>
+        </div>
+        <p class="preview-note">Sample market-linked data updates every 3s</p>
+      </div>
+      <div class="tx-table">
+        <div class="tx-row tx-head">
+          <span>Type</span>
+          <span>Asset</span>
+          <span>Wallet</span>
+          <span>Value</span>
+          <span>Status</span>
+        </div>
+        <div class="tx-row">
+          <span><span class="tag">Buy</span></span>
+          <span id="row1Asset">BTC</span>
+          <span id="row1Wallet">0xDe...0008</span>
+          <span id="row1Value">$12,900</span>
+          <span><span class="pill good">Confirmed</span></span>
+        </div>
+        <div class="tx-row">
+          <span><span class="tag">Swap</span></span>
+          <span id="row2Asset">ETH -> SOL</span>
+          <span id="row2Wallet">0x80...0070</span>
+          <span id="row2Value">$3,440</span>
+          <span><span class="pill good">Completed</span></span>
+        </div>
+        <div class="tx-row">
+          <span><span class="tag">Stake</span></span>
+          <span id="row3Asset">ATOM</span>
+          <span id="row3Wallet">0x91...11af</span>
+          <span id="row3Value">$2,180</span>
+          <span><span class="pill pending">Pending</span></span>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <section id="pricing" class="snap-section section pricing-shell">
+      <div class="container cta reveal-on-scroll">
+        <p class="eyebrow">Early Access</p>
+        <h2>Launch your crypto tracking stack today</h2>
+        <p>Start free, connect wallets, and get instant performance visibility.</p>
+        <a class="btn btn-primary" href="#">Join Beta</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer reveal-on-scroll">
+    <div class="container footer-grid">
+      <div>
+        <a class="brand" href="#">
+          <span class="brand-mark"></span>
+          <span class="brand-text">Tejam</span>
+        </a>
+        <p class="footer-copy">Realtime crypto portfolio tracking for serious investors and operators.</p>
+      </div>
+      <div>
+        <h3>Product</h3>
+        <a href="#features">Features</a>
+        <a href="#preview">Preview</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <div>
+        <h3>Resources</h3>
+        <a href="#">Docs</a>
+        <a href="#">API</a>
+        <a href="#">Security</a>
+      </div>
+      <div>
+        <h3>Social</h3>
+        <a href="#">X / Twitter</a>
+        <a href="#">Discord</a>
+        <a href="#">GitHub</a>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>2026 Tejam. Built for crypto portfolio tracking.</p>
+      <p>Market data feed: demo mode</p>
+    </div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
