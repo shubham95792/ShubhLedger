@@ -1,8 +1,12 @@
 ﻿<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#e8f4ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tejam">
   <title>Tejam | Crypto Portfolio Tracker</title>
   <meta name="description" content="Track your crypto portfolio, holdings, and transactions in one high-performance dashboard.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,15 +21,32 @@
   <header class="site-header">
     <div class="container nav-wrap">
       <a class="brand" href="#">
-        <span class="brand-mark"></span>
+        <span class="brand-logo-ts" aria-hidden="true">TS</span>
         <span class="brand-text">Tejam</span>
       </a>
       <nav class="main-nav">
         <a href="#features">Features</a>
         <a href="#preview">Live Preview</a>
         <a href="#pricing">Pricing</a>
+        <a href="dashboard.html">Dashboard</a>
       </nav>
-      <a class="btn btn-ghost" href="#">Connect Wallet</a>
+      <div class="header-actions">
+        <button class="btn btn-ghost theme-toggle" type="button" aria-pressed="false">Dark Mode</button>
+        <a class="btn btn-ghost" href="dashboard.html">Open Dashboard</a>
+      </div>
+      <button id="navToggleBtn" class="btn btn-ghost nav-toggle" type="button" aria-expanded="false" aria-controls="mobileMenu">Menu</button>
+    </div>
+    <div id="mobileMenu" class="container mobile-menu" aria-hidden="true">
+      <nav class="mobile-nav">
+        <a href="#features">Features</a>
+        <a href="#preview">Live Preview</a>
+        <a href="#pricing">Pricing</a>
+        <a href="dashboard.html">Dashboard</a>
+      </nav>
+      <div class="mobile-actions">
+        <button class="btn btn-ghost theme-toggle" type="button" aria-pressed="false">Dark Mode</button>
+        <a class="btn btn-ghost" href="dashboard.html">Open Dashboard</a>
+      </div>
     </div>
   </header>
 
@@ -38,7 +59,7 @@
             <h1>Track Every Coin.<br>Own Every Move.</h1>
             <p class="subtitle">Monitor total portfolio value, 24h P/L, and on-chain activity across wallets in one clean dashboard built for active investors.</p>
             <div class="hero-cta">
-              <a class="btn btn-primary" href="#">Start Tracking Free</a>
+              <a class="btn btn-primary" href="dashboard.html">Start Tracking Free</a>
               <a class="btn btn-ghost" href="#preview">See Demo</a>
             </div>
             <ul class="hero-points">
@@ -141,7 +162,7 @@
           <button class="seg-btn" data-range="7d" type="button">7D</button>
           <button class="seg-btn" data-range="30d" type="button">30D</button>
         </div>
-        <p class="preview-note">Sample market-linked data updates every 3s</p>
+        
       </div>
       <div class="tx-table">
         <div class="tx-row tx-head">
@@ -181,7 +202,7 @@
         <p class="eyebrow">Early Access</p>
         <h2>Launch your crypto tracking stack today</h2>
         <p>Start free, connect wallets, and get instant performance visibility.</p>
-        <a class="btn btn-primary" href="#">Join Beta</a>
+        <a class="btn btn-primary" href="dashboard.html">Join Beta</a>
       </div>
     </section>
   </main>
@@ -190,7 +211,7 @@
     <div class="container footer-grid">
       <div>
         <a class="brand" href="#">
-          <span class="brand-mark"></span>
+          <span class="brand-logo-ts" aria-hidden="true">TS</span>
           <span class="brand-text">Tejam</span>
         </a>
         <p class="footer-copy">Realtime crypto portfolio tracking for serious investors and operators.</p>
@@ -200,6 +221,7 @@
         <a href="#features">Features</a>
         <a href="#preview">Preview</a>
         <a href="#pricing">Pricing</a>
+        <a href="dashboard.html">Dashboard</a>
       </div>
       <div>
         <h3>Resources</h3>

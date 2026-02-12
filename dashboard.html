@@ -1,0 +1,135 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Tejam | Pulse Board</title>
+  <meta name="description" content="Full-page responsive crypto dashboard in a light blue visual system.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <div class="bg-layer" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html">
+        <span class="brand-logo-ts" aria-hidden="true">TS</span>
+        <span class="brand-text">Tejam</span>
+      </a>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="#">Reports</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="header-actions">
+        <button class="btn btn-ghost theme-toggle" type="button" aria-label="Toggle dark mode">Dark Mode</button>
+        <div class="wallet-menu">
+          <button class="btn btn-ghost wallet-btn wallet-trigger" type="button" aria-expanded="false">Connect Wallet</button>
+          <div class="wallet-dropdown" aria-hidden="true">
+            <button class="btn btn-ghost wallet-logout" type="button">Log Out</button>
+          </div>
+        </div>
+      </div>
+      <button id="navToggleBtn" class="btn btn-ghost nav-toggle" type="button" aria-expanded="false" aria-controls="mobileMenu">Menu</button>
+    </div>
+    <div id="mobileMenu" class="mobile-menu" aria-hidden="true">
+      <div class="wallet-address" aria-hidden="true">0x7788...0052</div>
+      <nav class="mobile-nav">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="#">Reports</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="mobile-actions">
+        <button class="btn btn-ghost theme-toggle" type="button" aria-label="Toggle dark mode">Dark Mode</button>
+        <button class="btn btn-ghost wallet-btn" type="button">Connect Wallet</button>
+        <button class="btn btn-ghost wallet-logout" type="button">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <section id="summary" class="summary-grid">
+      <article class="panel metric-panel">
+        <p class="label">Portfolio Value</p>
+        <h1 id="totalValue">$128,940.14</h1>
+        <p id="totalDelta" class="good">+4.88% today</p>
+      </article>
+
+      <article class="panel metric-panel">
+        <p class="label">24h P/L</p>
+        <h2 id="pnlValue">+$2,914.72</h2>
+        <p id="pnlDelta" class="good">+$426.30 unrealized</p>
+      </article>
+
+      <article class="panel mini-panel wallet-mini-panel">
+        <p class="label">Wallet</p>
+        <p id="walletState" class="mini-value">Not connected</p>
+      </article>
+
+      <article class="panel mini-panel">
+        <p class="label">Top Focus</p>
+        <p id="focusToken" class="mini-value">BTC 41%</p>
+      </article>
+    </section>
+
+    <section class="workspace-grid">
+      <article id="trend" class="panel trend-panel">
+        <div class="panel-head">
+          <h3>Portfolio Trend</h3>
+          <span class="pill">Live</span>
+        </div>
+        <div class="chart-shell" role="img" aria-label="Portfolio trend chart">
+          <svg id="trendSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(30, 174, 249, 0.40)"></stop>
+                <stop offset="100%" stop-color="rgba(30, 174, 249, 0.02)"></stop>
+              </linearGradient>
+              <linearGradient id="trendLine" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#53c8ff"></stop>
+                <stop offset="100%" stop-color="#1eaef9"></stop>
+              </linearGradient>
+            </defs>
+            <g id="gridGroup"></g>
+            <path id="areaPath" class="trend-area"></path>
+            <path id="linePath" class="trend-line"></path>
+            <g id="pointGroup"></g>
+            <circle id="latestPoint" class="trend-latest" r="1.35"></circle>
+          </svg>
+        </div>
+        <div id="axis" class="axis">
+          <span>00:00</span>
+          <span>06:00</span>
+          <span>12:00</span>
+          <span>18:00</span>
+          <span>Now</span>
+        </div>
+      </article>
+
+      <article id="tokens" class="panel tokens-panel">
+        <div class="panel-head">
+          <h3>Wallet Tokens</h3>
+          <span id="tokensMeta" class="muted">All wallet assets</span>
+        </div>
+        <div class="token-table" id="tokenList"></div>
+      </article>
+
+      <article id="ticker" class="panel ticker-panel">
+        <div class="ticker-viewport">
+          <div class="ticker-track">
+            <div id="tokenTickerRow" class="ticker-row"></div>
+            <div id="tokenTickerRowClone" class="ticker-row" aria-hidden="true"></div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

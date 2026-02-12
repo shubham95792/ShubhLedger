@@ -96,3 +96,66 @@ const observer = new IntersectionObserver(
 document.querySelectorAll(".reveal-on-scroll").forEach((node) => {
   observer.observe(node);
 });
+
+const themeToggles = document.querySelectorAll(".theme-toggle");
+const root = document.documentElement;
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+const navToggleBtn = document.getElementById("navToggleBtn");
+const siteHeader = document.querySelector(".site-header");
+const mobileMenu = document.getElementById("mobileMenu");
+
+function applyTheme(theme) {
+  const isDark = theme === "dark";
+  root.setAttribute("data-theme", isDark ? "dark" : "light");
+
+  themeToggles.forEach((toggle) => {
+    toggle.setAttribute("aria-pressed", String(isDark));
+    toggle.textContent = isDark ? "Light Mode" : "Dark Mode";
+  });
+
+  localStorage.setItem("theme", isDark ? "dark" : "light");
+
+  if (themeMeta) {
+    themeMeta.setAttribute("content", isDark ? "#050607" : "#e8f4ff");
+  }
+}
+
+const storedTheme = localStorage.getItem("theme");
+const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+const initialTheme = storedTheme || (prefersDark ? "dark" : "light");
+applyTheme(initialTheme);
+
+themeToggles.forEach((toggle) => {
+  toggle.addEventListener("click", () => {
+    const nextTheme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    applyTheme(nextTheme);
+  });
+});
+
+if (navToggleBtn && siteHeader && mobileMenu) {
+  const closeMenu = () => {
+    siteHeader.classList.remove("nav-open");
+    navToggleBtn.setAttribute("aria-expanded", "false");
+    navToggleBtn.textContent = "Menu";
+    mobileMenu.setAttribute("aria-hidden", "true");
+  };
+
+  navToggleBtn.addEventListener("click", () => {
+    const isOpen = siteHeader.classList.toggle("nav-open");
+    navToggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    navToggleBtn.textContent = isOpen ? "Close" : "Menu";
+    mobileMenu.setAttribute("aria-hidden", isOpen ? "false" : "true");
+  });
+
+  mobileMenu.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => {
+      closeMenu();
+    });
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth >= 761) {
+      closeMenu();
+    }
+  });
+}
