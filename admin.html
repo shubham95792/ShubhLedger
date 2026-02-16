@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShubhLedger Admin Panel</title>
+  <meta name="description" content="Admin panel for wallet snapshots, token data, deletes, and report generation.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="admin-header">
+    <div class="container header-wrap">
+      <div class="brand-wrap">
+        <div class="brand-logo" aria-hidden="true">SP</div>
+        <div>
+          <p class="eyebrow">Control Center</p>
+          <h1>ShubhLedger Admin Panel</h1>
+          <p id="lastUpdated" class="muted">Loading database data...</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="refreshBtn" class="btn btn-ghost" type="button">Refresh Data</button>
+        <button id="userReportBtn" class="btn btn-primary" type="button">User Summary Report</button>
+        <button id="tokenReportBtn" class="btn btn-primary" type="button">Token Value Report</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container admin-main">
+    <section class="stat-grid" aria-label="Database summary">
+      <article class="stat-card">
+        <p>Total Users</p>
+        <h2 id="walletsCount">0</h2>
+      </article>
+      <article class="stat-card">
+        <p>Total Snapshots</p>
+        <h2 id="snapshotsCount">0</h2>
+      </article>
+      <article class="stat-card">
+        <p>Total Token Rows</p>
+        <h2 id="tokenRowsCount">0</h2>
+      </article>
+      <article class="stat-card">
+        <p>Aggregate Token Value</p>
+        <h2 id="aggregateBalance">0</h2>
+      </article>
+    </section>
+
+    <section class="panel latest-records-panel">
+      <div class="panel-head">
+        <h3>Latest User Records</h3>
+        <input id="walletFilterInput" class="filter-input" type="search" placeholder="Filter by wallet address">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Wallet</th>
+              <th>Snapshot Time</th>
+              <th>Tokens</th>
+              <th>Total Value</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="walletTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel token-value-panel">
+      <div class="panel-head">
+        <h3>Token Value List (Latest Snapshot Per User)</h3>
+      </div>
+      <div class="table-wrap token-list-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Wallet</th>
+              <th>Chain</th>
+              <th>Symbol</th>
+              <th>Token Address</th>
+              <th>Balance</th>
+              <th>Value</th>
+              <th>Status</th>
+              <th>Snapshot Id</th>
+            </tr>
+          </thead>
+          <tbody id="tokenTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel snapshots-panel">
+      <div class="panel-head">
+        <h3>All Snapshots</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Snapshot Id</th>
+              <th>Wallet</th>
+              <th>Time</th>
+              <th>Tokens</th>
+              <th>Total Value</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="snapshotTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <template id="walletTokensTemplate">
+    <tr class="token-subtable-row">
+      <td colspan="5">
+        <div class="token-subtable-wrap">
+          <div class="token-subtable-head">Wallet Token Details</div>
+          <div class="table-wrap inner-wrap">
+            <table class="inner-table">
+              <thead>
+                <tr>
+                  <th>Chain</th>
+                  <th>Symbol</th>
+                  <th>Token Address</th>
+                  <th>Balance</th>
+                  <th>Value</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody class="inner-token-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </td>
+    </tr>
+  </template>
+
+  <script src="admin.js"></script>
+</body>
+</html>
