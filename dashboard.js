@@ -64,9 +64,11 @@ const walletMenuEl = document.querySelector(".wallet-menu");
 const walletTriggerEl = document.querySelector(".wallet-trigger");
 const walletDropdownEl = document.querySelector(".wallet-dropdown");
 const walletStateEl = document.getElementById("walletState");
+const connectOverlayEl = document.getElementById("connectOverlay");
 const themeToggleBtnEls = document.querySelectorAll(".theme-toggle");
 const navToggleBtnEl = document.getElementById("navToggleBtn");
 const siteHeaderEl = document.querySelector(".site-header");
+const syncWalletBtnEl = document.getElementById("syncWalletBtn");
 
 const axisEl = document.getElementById("axis");
 const tokenListEl = document.getElementById("tokenList");
@@ -92,12 +94,90 @@ const latestPointEl = document.getElementById("latestPoint");
 
 let currentRange = "1d";
 let connected = false;
-const THEME_KEY = "tejam_dashboard_theme";
-const WALLET_KEY = "tejam_dashboard_wallet";
-const WALLET_FALLBACK = "0x7788...0052";
+let liveData = null;
+let autoRefreshId = null;
+let didInitialSync = false;
+let lastTokens = null;
+let walletLoadVersion = 0;
+let walletLoadInFlight = false;
+let lastAutoSyncAt = 0;
+let priceCache = new Map();
+let symbolQuoteCache = new Map();
+let lastPriceFetch = 0;
+const PRICE_CACHE_TTL = 30000;
+const SYMBOL_QUOTE_CACHE_TTL = 300000;
+const THEME_KEY = "shubhledger_dashboard_theme";
+const WALLET_KEY = "shubhledger_dashboard_wallet";
+const API_BASE = (() => {
+  if (window.location.port !== "5500") return "api";
+  const firstSegment = window.location.pathname.split("/").filter(Boolean)[0] || "";
+  const projectRoot = firstSegment && !firstSegment.includes(".") ? firstSegment : "ShubhLedger";
+  return `http://localhost/${projectRoot}/api`;
+})();
+const WALLET_REFRESH_MS = 120000;
+const WALLET_SYNC_MS = 900000;
+const MIN_TOKEN_VALUE = 0.01;
+
+const coingeckoIdMap = {
+  BTC: "bitcoin",
+  ETH: "ethereum",
+  BNB: "binancecoin",
+  SOL: "solana",
+  OP: "optimism",
+  ARB: "arbitrum",
+  AVAX: "avalanche-2",
+  ATOM: "cosmos",
+  USDT: "tether",
+  USDC: "usd-coin",
+  DAI: "dai",
+  MATIC: "polygon-ecosystem-token",
+  POL: "polygon-ecosystem-token",
+  WETH: "ethereum",
+  WBNB: "binancecoin",
+  WMATIC: "polygon-ecosystem-token",
+  WPOL: "polygon-ecosystem-token"
+};
+
+const coingeckoPlatformMap = {
+  eth: "ethereum",
+  bsc: "binance-smart-chain",
+  arbitrum: "arbitrum-one",
+  base: "base",
+  optimism: "optimism",
+  polygon: "polygon-pos"
+};
+
+const wrappedNativeByChain = {
+  eth: { platform: "ethereum", address: "0xc02aa39b223fe8d0a0e5c4f27ead9083c756cc2" },
+  bsc: { platform: "binance-smart-chain", address: "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" },
+  polygon: { platform: "polygon-pos", address: "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270" },
+  arbitrum: { platform: "arbitrum-one", address: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1" },
+  optimism: { platform: "optimism", address: "0x4200000000000000000000000000000000000006" },
+  base: { platform: "base", address: "0x4200000000000000000000000000000000000006" }
+};
 
 function setText(node, value) {
   if (node) node.textContent = value;
+}
+
+function isNativePlaceholder(address) {
+  const a = String(address || "").toLowerCase();
+  return a === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" ||
+    a === "0x0000000000000000000000000000000000001010";
+}
+
+function isValidContractAddress(address) {
+  const a = String(address || "").toLowerCase();
+  return /^0x[a-f0-9]{40}$/.test(a) &&
+    a !== "0x0000000000000000000000000000000000000000" &&
+    a !== "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" &&
+    a !== "0x0000000000000000000000000000000000001010";
+}
+
+function toShortAddress(address) {
+  const text = String(address || "");
+  if (text.length <= 16) return text;
+  return `${text.slice(0, 8)}...${text.slice(-6)}`;
 }
 
 function applyTheme(theme) {
@@ -197,6 +277,36 @@ function renderTrend(values) {
   latestPointEl.setAttribute("cy", latest.y.toFixed(2));
 }
 
+function formatMoney(value) {
+  return `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatPercent(value) {
+  const sign = value >= 0 ? "+" : "-";
+  return `${sign}${Math.abs(value).toFixed(2)}%`;
+}
+
+function parseMoney(value) {
+  const n = Number(String(value || "").replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function parsePercent(value) {
+  const n = Number(String(value || "").replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function getCurrentWalletAddress() {
+  try {
+    const saved = localStorage.getItem(WALLET_KEY);
+    if (saved) return saved;
+  } catch (_error) {
+    // Ignore localStorage read issues.
+  }
+  const text = walletTriggerEl?.textContent?.trim() || "";
+  return text && text !== "Connect Wallet" ? text : "";
+}
+
 function renderAxis(labels) {
   if (!axisEl) return;
   axisEl.innerHTML = "";
@@ -213,14 +323,23 @@ function renderTokenTable(tokens) {
 
   const head = document.createElement("div");
   head.className = "token-row token-head";
-  head.innerHTML = "<span>Token</span><span>Balance</span><span>Price</span><span>Value</span><span>24h</span>";
+  head.innerHTML = "<span>Token</span><span>Chain</span><span>Balance</span><span>Price</span><span>Value</span><span>24h</span>";
   tokenListEl.appendChild(head);
+
+  if (!tokens.length) {
+    const empty = document.createElement("div");
+    empty.className = "token-row token-empty";
+    empty.textContent = "No wallet tokens found for the latest snapshot.";
+    tokenListEl.appendChild(empty);
+    return;
+  }
 
   tokens.forEach((token) => {
     const row = document.createElement("div");
     row.className = "token-row";
     row.innerHTML = `
       <span class="token-symbol">${token.symbol}</span>
+      <span class="token-chain">${token.chain || "-"}</span>
       <span>${token.balance}</span>
       <span>${token.price}</span>
       <span>${token.value}</span>
@@ -263,7 +382,29 @@ function renderTicker(items) {
 
 function render(range) {
   currentRange = range;
-  const data = dataByRange[range];
+  const isConnected = connected || Boolean(getCurrentWalletAddress());
+  if (isConnected && !liveData) {
+    const hasRenderedTable = tokenListEl && tokenListEl.childElementCount > 0;
+    if (!hasRenderedTable) {
+      const fallback = dataByRange[range];
+      if (fallback) {
+        setText(totalValueEl, fallback.total);
+        setText(totalDeltaEl, fallback.totalDelta);
+        setText(pnlValueEl, fallback.pnl);
+        setText(pnlDeltaEl, fallback.pnlDelta);
+        const lead = fallback.tokens[0];
+        setText(focusTokenEl, lead ? `${lead.symbol} ${lead.change}` : "-");
+        renderAxis(fallback.axis);
+        renderTrend(fallback.trend);
+        renderTokenTable(fallback.tokens);
+        renderTicker(fallback.ticker);
+      }
+    }
+    setText(tokensMetaEl, walletLoadInFlight ? "Refreshing wallet data..." : "Fetching wallet data...");
+    return;
+  }
+
+  const data = isConnected && liveData ? liveData : dataByRange[range];
   if (!data) return;
 
   setText(totalValueEl, data.total);
@@ -272,8 +413,8 @@ function render(range) {
   setText(pnlDeltaEl, data.pnlDelta);
 
   const lead = data.tokens[0];
-  setText(focusTokenEl, `${lead.symbol} ${lead.change}`);
-  setText(tokensMetaEl, connected ? `${data.tokens.length} tokens synced` : `${data.tokens.length} wallet tokens`);
+  setText(focusTokenEl, lead ? `${lead.symbol} ${lead.change}` : "-");
+  setText(tokensMetaEl, isConnected ? `${data.tokens.length} tokens synced` : `${data.tokens.length} wallet tokens`);
 
   renderAxis(data.axis);
   renderTrend(data.trend);
@@ -304,11 +445,452 @@ function setWalletDropdown(open) {
   walletDropdownEl.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
 }
 
+async function fetchWalletTokens(address, forceRefresh = false) {
+  try {
+    const url = `${API_BASE}/latest_wallet.php?address=${encodeURIComponent(address)}${forceRefresh ? "&refresh=1" : ""}`;
+    const response = await fetch(url, {
+      cache: "no-store"
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      return { data: null, error: payload?.error || "request_failed" };
+    }
+    const json = await response.json();
+    if (!json?.success) return { data: null, error: json?.error || "request_failed" };
+    return { data: json, error: null };
+  } catch (_error) {
+    return { data: null, error: "request_failed" };
+  }
+}
+
+function canonicalPriceSymbol(symbol, chain) {
+  const s = String(symbol || "").toUpperCase();
+  const c = String(chain || "").toLowerCase();
+  if (s === "WETH") return "ETH";
+  if (s === "WBNB") return "BNB";
+  if (s === "WMATIC" || s === "WPOL") return "POL";
+  if (s === "MATIC" && c === "polygon") return "POL";
+  return s;
+}
+
+async function buildLiveDataFromBackend(payload) {
+  const rawTokens = Array.isArray(payload?.tokens) ? payload.tokens : [];
+  const prepared = rawTokens.map((token) => {
+    const symbol = String(token?.symbol || "-").toUpperCase();
+    const chain = String(token?.chain || "-").toUpperCase();
+    const balance = Number(token?.balance || 0);
+    const price = Number(token?.price || 0);
+    const value = Number(token?.value || 0);
+    const change = Number(token?.change || 0);
+    return { symbol, chain, balance, price, value, change };
+  });
+
+  const symbolsNeeded = [
+    ...new Set(
+      prepared
+        .filter((token) => !(Number.isFinite(token.price) && token.price > 0))
+        .map((token) => canonicalPriceSymbol(token.symbol, token.chain))
+        .filter((symbol) => Boolean(coingeckoIdMap[symbol]))
+    )
+  ];
+  const symbolPrices = symbolsNeeded.length ? await fetchSymbolPrices(symbolsNeeded) : {};
+  const previousTokenByKey = new Map(
+    Array.isArray(liveData?.tokens)
+      ? liveData.tokens.map((token) => [`${String(token.chain || "").toUpperCase()}|${String(token.symbol || "").toUpperCase()}`, token])
+      : []
+  );
+
+  const tokens = prepared.map((token) => {
+    const tokenKey = `${token.chain}|${token.symbol}`;
+    const previous = previousTokenByKey.get(tokenKey);
+    const canonical = canonicalPriceSymbol(token.symbol, token.chain);
+    const id = coingeckoIdMap[canonical];
+    const quote = id ? symbolPrices?.[id] : null;
+    const previousPrice = previous ? parseMoney(previous.price) : 0;
+    const previousChange = previous ? parsePercent(previous.change) : 0;
+    const resolvedPrice = token.price > 0 ? token.price : Number(quote?.usd || previousPrice || 0);
+    const resolvedChange = Number.isFinite(token.change) && token.change !== 0
+      ? token.change
+      : Number(quote?.usd_24h_change || previousChange || 0);
+    const resolvedValue = resolvedPrice > 0
+      ? token.balance * resolvedPrice
+      : (token.value > 0 ? token.value : (previous ? parseMoney(previous.value) : 0));
+    return {
+      symbol: token.symbol,
+      chain: token.chain,
+      valueRaw: Number(resolvedValue || 0),
+      changeRaw: Number(resolvedChange || 0),
+      balance: token.balance.toFixed(4),
+      price: formatMoney(resolvedPrice || 0),
+      value: formatMoney(resolvedValue || 0),
+      change: formatPercent(resolvedChange || 0)
+    };
+  }).filter((token) => Number(token.balance || 0) > 0);
+
+  const totalValue = tokens.reduce((sum, t) => sum + Number(t.valueRaw || 0), 0);
+  const totalDeltaValue = tokens.reduce((sum, t) => sum + (Number(t.valueRaw || 0) * Number(t.changeRaw || 0) / 100), 0);
+  const totalDeltaPercent = totalValue > 0 ? (totalDeltaValue / totalValue) * 100 : 0;
+  return {
+    total: formatMoney(totalValue),
+    totalDelta: `${formatPercent(totalDeltaPercent)} today`,
+    pnl: formatMoney(totalDeltaValue),
+    pnlDelta: "24h change",
+    axis: dataByRange[currentRange].axis,
+    trend: dataByRange[currentRange].trend,
+    tokens,
+    ticker: dataByRange[currentRange].ticker
+  };
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+async function fetchTokenPriceByPlatform(platform, addresses) {
+  const results = {};
+  const chunks = chunkArray(addresses, 60);
+  for (const chunk of chunks) {
+    const url = `https://api.coingecko.com/api/v3/simple/token_price/${platform}?contract_addresses=${encodeURIComponent(chunk.join(","))}&vs_currencies=usd&include_24hr_change=true`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) continue;
+      const json = await response.json();
+      if (json && typeof json === "object") {
+        Object.assign(results, json);
+      }
+    } catch (_error) {
+      // Ignore per-request failures.
+    }
+  }
+  return results;
+}
+
+function makeCacheKey(chain, addressOrSymbol) {
+  return `${chain}:${addressOrSymbol}`;
+}
+
+function readPriceCache(tokens) {
+  if (!priceCache.size) return null;
+  const now = Date.now();
+  if (now - lastPriceFetch > PRICE_CACHE_TTL) return null;
+
+  const addressPrices = {};
+  const symbolPrices = {};
+
+  tokens.forEach((token) => {
+    const symbol = String(token.symbol || "").toUpperCase();
+    const chainKey = String(token.chain || "").toLowerCase();
+    const tokenAddress = String(token.token_address || "").toLowerCase();
+
+    if (tokenAddress) {
+      const key = makeCacheKey(chainKey, tokenAddress);
+      if (priceCache.has(key)) {
+        if (!addressPrices[chainKey]) addressPrices[chainKey] = {};
+        addressPrices[chainKey][tokenAddress] = priceCache.get(key);
+      }
+    }
+
+    if (symbol) {
+      const key = makeCacheKey("symbol", symbol);
+      if (priceCache.has(key)) {
+        const id = coingeckoIdMap[symbol];
+        if (id) symbolPrices[id] = priceCache.get(key);
+      }
+    }
+  });
+
+  return { addressPrices, symbolPrices };
+}
+
+function writePriceCache(priceMap) {
+  lastPriceFetch = Date.now();
+
+  Object.entries(priceMap.addressPrices || {}).forEach(([chain, values]) => {
+    Object.entries(values || {}).forEach(([address, data]) => {
+      priceCache.set(makeCacheKey(chain, address), data);
+    });
+  });
+
+  Object.entries(priceMap.symbolPrices || {}).forEach(([id, data]) => {
+    const symbol = Object.keys(coingeckoIdMap).find((key) => coingeckoIdMap[key] === id);
+    if (symbol) {
+      priceCache.set(makeCacheKey("symbol", symbol), data);
+    }
+  });
+}
+
+async function fetchSymbolPrices(symbols) {
+  const ids = symbols
+    .map((symbol) => coingeckoIdMap[symbol.toUpperCase()])
+    .filter(Boolean);
+  if (!ids.length) return {};
+
+  const uniqueIds = [...new Set(ids)];
+  const now = Date.now();
+  const cached = {};
+  const missingIds = [];
+  uniqueIds.forEach((id) => {
+    const cacheEntry = symbolQuoteCache.get(id);
+    if (cacheEntry && (now - cacheEntry.at) <= SYMBOL_QUOTE_CACHE_TTL) {
+      cached[id] = cacheEntry.quote;
+    } else {
+      missingIds.push(id);
+    }
+  });
+  if (!missingIds.length) return cached;
+
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(missingIds.join(","))}&vs_currencies=usd&include_24hr_change=true`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return cached;
+    const json = await response.json();
+    const live = json && typeof json === "object" ? json : {};
+    Object.entries(live).forEach(([id, quote]) => {
+      if (quote && typeof quote === "object") {
+        symbolQuoteCache.set(id, { quote, at: now });
+      }
+    });
+    return { ...cached, ...live };
+  } catch (_error) {
+    return cached;
+  }
+}
+
+async function fetchNativeChainPrices(chains) {
+  const out = {};
+  const uniqueChains = [...new Set(chains)];
+  await Promise.all(uniqueChains.map(async (chain) => {
+    const conf = wrappedNativeByChain[chain];
+    if (!conf) return;
+    const url = `https://api.coingecko.com/api/v3/simple/token_price/${conf.platform}?contract_addresses=${conf.address}&vs_currencies=usd`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return;
+      const json = await response.json();
+      out[chain] = Number(json?.[conf.address]?.usd || 0);
+    } catch (_error) {
+      out[chain] = 0;
+    }
+  }));
+  return out;
+}
+
+async function fetchPrices(tokens) {
+  const cached = readPriceCache(tokens);
+  if (cached) return cached;
+
+  const byAddress = {};
+  const symbolList = [];
+  const nativeSymbols = new Set();
+  const nativeChains = new Set();
+
+  tokens.forEach((token) => {
+    const symbol = String(token.symbol || "").toUpperCase();
+    const chain = String(token.chain || "").toLowerCase();
+    const tokenAddress = String(token.token_address || "").toLowerCase();
+    const platform = coingeckoPlatformMap[chain];
+    if (isNativePlaceholder(tokenAddress)) {
+      if (symbol) nativeSymbols.add(symbol);
+      if (chain) nativeChains.add(chain);
+      return;
+    }
+
+    if (tokenAddress && platform && isValidContractAddress(tokenAddress)) {
+      if (!byAddress[chain]) byAddress[chain] = new Set();
+      byAddress[chain].add(tokenAddress);
+    } else if (symbol) {
+      symbolList.push(symbol);
+    }
+  });
+
+  const addressPrices = {};
+  for (const [chain, addressSet] of Object.entries(byAddress)) {
+    const platform = coingeckoPlatformMap[chain];
+    if (!platform) continue;
+    const addresses = Array.from(addressSet);
+    if (!addresses.length) continue;
+    addressPrices[chain] = await fetchTokenPriceByPlatform(platform, addresses);
+  }
+
+  const symbolPrices = await fetchSymbolPrices(symbolList);
+  const nativeSymbolPrices = await fetchSymbolPrices([...nativeSymbols]);
+  const nativeChainPrices = await fetchNativeChainPrices([...nativeChains]);
+
+  const result = { addressPrices, symbolPrices, nativeSymbolPrices, nativeChainPrices };
+  writePriceCache(result);
+  return result;
+}
+
+function buildLiveData(tokens, priceMap) {
+  const computed = tokens.map((token) => {
+    const symbol = String(token.symbol || "-").toUpperCase();
+    const chain = token.chain ? token.chain.toUpperCase() : "-";
+    const chainKey = String(token.chain || "").toLowerCase();
+    const tokenAddress = String(token.token_address || "").toLowerCase();
+    const balance = Number(token.balance || 0);
+    const addressPrice = priceMap.addressPrices?.[chainKey]?.[tokenAddress];
+    const symbolId = coingeckoIdMap[symbol];
+    const symbolPrice = symbolId ? priceMap.symbolPrices?.[symbolId] : null;
+    const nativeSymbolPrice = symbolId ? priceMap.nativeSymbolPrices?.[symbolId] : null;
+
+    const isNative = isNativePlaceholder(tokenAddress);
+    const nativeChainPrice = Number(priceMap.nativeChainPrices?.[chainKey] || 0);
+
+    const price = isNative
+      ? (nativeChainPrice > 0 ? nativeChainPrice : (nativeSymbolPrice?.usd ?? symbolPrice?.usd ?? 0))
+      : (addressPrice?.usd ?? symbolPrice?.usd ?? 0);
+    const change = isNative
+      ? (nativeSymbolPrice?.usd_24h_change ?? symbolPrice?.usd_24h_change ?? 0)
+      : (addressPrice?.usd_24h_change ?? symbolPrice?.usd_24h_change ?? 0);
+    const value = balance * price;
+    return {
+      symbol,
+      chain,
+      balance,
+      price,
+      change,
+      value
+    };
+  }).filter((token) =>
+    Number.isFinite(token.price) &&
+    Number.isFinite(token.value) &&
+    token.price > 0 &&
+    token.value >= MIN_TOKEN_VALUE
+  )
+    .sort((a, b) => b.value - a.value);
+
+  const totalValue = computed.reduce((sum, token) => sum + token.value, 0);
+  const totalDeltaValue = computed.reduce((sum, token) => sum + (token.value * (token.change / 100)), 0);
+  const totalDeltaPercent = totalValue > 0 ? (totalDeltaValue / totalValue) * 100 : 0;
+
+  const formattedTokens = computed.map((token) => ({
+    symbol: token.symbol,
+    chain: token.chain,
+    balance: Number(token.balance).toFixed(4),
+    price: formatMoney(token.price || 0),
+    value: formatMoney(token.value || 0),
+    change: formatPercent(token.change || 0)
+  }));
+
+  return {
+    total: formatMoney(totalValue),
+    totalDelta: `${formatPercent(totalDeltaPercent)} today`,
+    pnl: formatMoney(totalDeltaValue),
+    pnlDelta: "24h change",
+    axis: dataByRange[currentRange].axis,
+    trend: dataByRange[currentRange].trend,
+    tokens: formattedTokens,
+    ticker: dataByRange[currentRange].ticker
+  };
+}
+
+async function loadWalletData(options = {}) {
+  const { forceRefresh = false } = options;
+  if (!connected) return;
+  if (walletLoadInFlight && !forceRefresh) return;
+  const address = getCurrentWalletAddress();
+  if (!address) return;
+  const loadVersion = ++walletLoadVersion;
+  walletLoadInFlight = true;
+  try {
+    const result = await fetchWalletTokens(address, forceRefresh);
+    if (loadVersion !== walletLoadVersion || !connected) return;
+    if (result?.error === "no_snapshot" && !didInitialSync) {
+      didInitialSync = true;
+      const ok = await syncWalletSnapshot(address);
+      if (ok) {
+        const retry = await fetchWalletTokens(address, true);
+        if (loadVersion !== walletLoadVersion || !connected) return;
+        if (retry?.data) {
+          const retryTokens = Array.isArray(retry.data.tokens) ? retry.data.tokens : [];
+          lastTokens = retryTokens;
+          const nextLiveData = await buildLiveDataFromBackend(retry.data);
+          if (nextLiveData.tokens.length || !liveData) {
+            liveData = nextLiveData;
+          }
+          render(currentRange);
+        }
+        return;
+      }
+    }
+
+    const payload = result?.data || null;
+    if (!payload) return;
+    const tokens = Array.isArray(payload.tokens) ? payload.tokens : [];
+    lastTokens = tokens;
+    const nextLiveData = await buildLiveDataFromBackend(payload);
+    if (nextLiveData.tokens.length || !liveData) {
+      liveData = nextLiveData;
+    }
+    render(currentRange);
+  } finally {
+    walletLoadInFlight = false;
+  }
+}
+
+async function syncWalletSnapshot(address) {
+  try {
+    const response = await fetch(`${API_BASE}/sync_wallet.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ wallet_address: address })
+    });
+    if (!response.ok) {
+      console.error("Wallet sync failed:", response.status, response.statusText);
+      return false;
+    }
+    const json = await response.json();
+    if (!json?.success) {
+      console.error("Wallet sync failed:", json);
+    }
+    return Boolean(json?.success);
+  } catch (error) {
+    console.error("Wallet sync request error:", error);
+    return false;
+  }
+}
+
+function startAutoRefresh() {
+  if (autoRefreshId) return;
+  autoRefreshId = window.setInterval(async () => {
+    if (!connected) return;
+    if (walletLoadInFlight) return;
+    const now = Date.now();
+    const shouldSync = now - lastAutoSyncAt >= WALLET_SYNC_MS;
+    if (shouldSync) {
+      const address = getCurrentWalletAddress();
+      if (address) {
+        const ok = await syncWalletSnapshot(address);
+        if (ok) lastAutoSyncAt = now;
+        await loadWalletData({ forceRefresh: true });
+        return;
+      }
+    }
+    await loadWalletData({ forceRefresh: false });
+  }, WALLET_REFRESH_MS);
+}
+
+function stopAutoRefresh() {
+  if (!autoRefreshId) return;
+  window.clearInterval(autoRefreshId);
+  autoRefreshId = null;
+}
+
 function setWallet(connectedState, address = "") {
   connected = connectedState;
+  walletLoadVersion += 1;
+  walletLoadInFlight = false;
+  lastAutoSyncAt = 0;
+  didInitialSync = false;
+  lastTokens = null;
   walletBtnEls.forEach((btn) => {
     if (btn.classList.contains("wallet-trigger")) {
-      btn.textContent = connected ? address : "Connect Wallet";
+      btn.textContent = connected ? toShortAddress(address) : "Connect Wallet";
+      btn.title = connected ? address : "Connect Wallet";
       return;
     }
 
@@ -329,19 +911,53 @@ function setWallet(connectedState, address = "") {
   try {
     if (connected) {
       localStorage.setItem(WALLET_KEY, address);
+      startAutoRefresh();
+      loadWalletData({ forceRefresh: false });
     } else {
       localStorage.removeItem(WALLET_KEY);
+      liveData = null;
+      stopAutoRefresh();
     }
   } catch (_error) {
     // Ignore localStorage write issues.
   }
+
+  if (connectOverlayEl) {
+    connectOverlayEl.classList.toggle("is-active", !connected);
+    connectOverlayEl.setAttribute("aria-hidden", connected ? "true" : "false");
+  }
+}
+
+async function connectMetaMask() {
+  if (!window.ethereum?.request) {
+    alert("MetaMask not detected. Please install MetaMask to connect.");
+    return "";
+  }
+
+  try {
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    const account = accounts && accounts[0] ? accounts[0] : "";
+    if (!account) {
+      alert("No wallet account found.");
+      return "";
+    }
+    setWallet(true, account);
+    return account;
+  } catch (_error) {
+    alert("Wallet connection request was rejected.");
+    return "";
+  }
 }
 
 walletBtnEls.forEach((btn) => {
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", async () => {
     if (!connected) {
-      setWallet(true, WALLET_FALLBACK);
-      render(currentRange);
+      const provider = btn.dataset.wallet;
+      if (!provider || provider === "metamask") {
+        await connectMetaMask();
+        return;
+      }
+      await connectMetaMask();
       return;
     }
 
@@ -386,13 +1002,52 @@ render("1d");
 
 try {
   const savedWallet = localStorage.getItem(WALLET_KEY);
-  if (savedWallet) {
-    setWallet(true, savedWallet);
+  if (savedWallet && window.ethereum?.request) {
+    window.ethereum.request({ method: "eth_accounts" }).then((accounts) => {
+      const account = accounts && accounts[0] ? accounts[0] : "";
+      if (account && account.toLowerCase() === savedWallet.toLowerCase()) {
+        setWallet(true, account);
+      } else {
+        setWallet(false);
+      }
+    }).catch(() => {
+      setWallet(false);
+    });
   } else {
     setWallet(false);
   }
 } catch (_error) {
   setWallet(false);
+}
+
+if (connectOverlayEl) {
+  connectOverlayEl.classList.toggle("is-active", !connected);
+  connectOverlayEl.setAttribute("aria-hidden", connected ? "true" : "false");
+}
+
+if (syncWalletBtnEl) {
+  syncWalletBtnEl.addEventListener("click", async () => {
+    let address = getCurrentWalletAddress();
+    if (!address) {
+      const connectedAddress = await connectMetaMask();
+      if (!connectedAddress) return;
+      address = connectedAddress;
+    }
+    syncWalletBtnEl.disabled = true;
+    syncWalletBtnEl.textContent = "Syncing...";
+    const ok = await syncWalletSnapshot(address);
+    if (ok) {
+      lastAutoSyncAt = Date.now();
+    }
+    if (connected) {
+      await loadWalletData({ forceRefresh: true });
+    }
+    syncWalletBtnEl.textContent = ok ? "Sync Wallet" : "Sync Failed";
+    setTimeout(() => {
+      syncWalletBtnEl.textContent = "Sync Wallet";
+      syncWalletBtnEl.disabled = false;
+    }, 1500);
+  });
 }
 
 if (navToggleBtnEl && siteHeaderEl) {

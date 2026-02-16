@@ -114,6 +114,66 @@ body {
   background: linear-gradient(180deg, var(--bg), var(--bg-2));
 }
 
+.connect-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 20, 32, 0.35);
+  backdrop-filter: blur(8px);
+  z-index: 50;
+  padding: 24px;
+}
+
+.connect-overlay.is-active {
+  display: flex;
+}
+
+.connect-card {
+  width: min(520px, 92vw);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(235, 245, 255, 0.88));
+  border: 1px solid rgba(58, 155, 255, 0.25);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 20px 48px rgba(10, 24, 40, 0.25);
+  text-align: center;
+}
+
+.connect-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.connect-card h2 {
+  margin: 0 0 8px;
+  font-family: "Orbitron", sans-serif;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+}
+
+.connect-sub {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.connect-cta {
+  min-width: 180px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+
+html[data-theme="dark"] .connect-card {
+  background: linear-gradient(180deg, rgba(18, 33, 51, 0.95), rgba(14, 27, 44, 0.92));
+  border-color: rgba(74, 174, 255, 0.28);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+}
+
 .bg-layer {
   position: fixed;
   inset: 0;
@@ -233,6 +293,12 @@ body {
 .header-actions {
   gap: 12px;
   justify-self: end;
+  min-width: 0;
+}
+
+#syncWalletBtn,
+.theme-toggle {
+  cursor: pointer;
 }
 
 .wallet-menu {
@@ -241,6 +307,10 @@ body {
 
 .wallet-trigger {
   min-width: 156px;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wallet-dropdown {
@@ -349,6 +419,9 @@ body {
   border: 1px solid rgba(58, 155, 255, 0.18);
   margin-bottom: 10px;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wallet-logout {
@@ -880,13 +953,42 @@ h3 {
   padding-right: 2px;
 }
 
+.tokens-panel .token-table {
+  max-height: clamp(280px, 42vh, 400px);
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-gutter: stable;
+}
+
+.tokens-panel .token-table::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tokens-panel .token-table::-webkit-scrollbar-track {
+  background: rgba(58, 155, 255, 0.08);
+  border-radius: 999px;
+}
+
+.tokens-panel .token-table::-webkit-scrollbar-thumb {
+  background: rgba(58, 155, 255, 0.35);
+  border-radius: 999px;
+}
+
+html[data-theme="dark"] .tokens-panel .token-table::-webkit-scrollbar-track {
+  background: rgba(74, 174, 255, 0.12);
+}
+
+html[data-theme="dark"] .tokens-panel .token-table::-webkit-scrollbar-thumb {
+  background: rgba(74, 174, 255, 0.4);
+}
+
 .token-row {
   border: 1px solid rgba(58, 155, 255, 0.22);
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(236, 246, 255, 0.62));
   padding: 11px 12px;
   display: grid;
-  grid-template-columns: 1.1fr 1fr 1fr 1fr auto;
+  grid-template-columns: 1.1fr 0.7fr 1fr 1fr 1fr auto;
   gap: 10px;
   align-items: center;
   font-size: 0.86rem;
@@ -898,6 +1000,14 @@ h3 {
   border-color: rgba(58, 155, 255, 0.4);
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(58, 155, 255, 0.12);
+}
+
+.token-empty {
+  grid-template-columns: 1fr;
+  text-align: center;
+  color: var(--muted);
+  font-weight: 700;
+  min-width: 0;
 }
 
 .token-head {

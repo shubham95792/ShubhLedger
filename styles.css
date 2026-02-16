@@ -1378,6 +1378,7 @@ h2 {
   gap: 8px;
   min-width: 140px;
   justify-content: center;
+  cursor: pointer;
 }
 
 .theme-toggle::before {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Tejam | Pulse Board</title>
+  <title>ShubhLedger | Pulse Board</title>
   <meta name="description" content="Full-page responsive crypto dashboard in a light blue visual system.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,16 +16,17 @@
   <header class="site-header">
     <div class="container nav-wrap">
       <a class="brand" href="index.html">
-        <span class="brand-logo-ts" aria-hidden="true">TS</span>
-        <span class="brand-text">Tejam</span>
+        <span class="brand-logo-ts" aria-hidden="true">SP</span>
+        <span class="brand-text">ShubhLedger</span>
       </a>
       <nav class="main-nav">
         <a href="index.html">Home</a>
         <a href="dashboard.html">Dashboard</a>
-        <a href="#">Reports</a>
-        <a href="#contact">Contact</a>
+        <a href="admin.html">Admin</a>
+        <a href="index.html#footer">Contact</a>
       </nav>
       <div class="header-actions">
+        <button class="btn btn-ghost" id="syncWalletBtn" type="button">Sync Wallet</button>
         <button class="btn btn-ghost theme-toggle" type="button" aria-label="Toggle dark mode">Dark Mode</button>
         <div class="wallet-menu">
           <button class="btn btn-ghost wallet-btn wallet-trigger" type="button" aria-expanded="false">Connect Wallet</button>
@@ -41,8 +42,8 @@
       <nav class="mobile-nav">
         <a href="index.html">Home</a>
         <a href="dashboard.html">Dashboard</a>
-        <a href="#">Reports</a>
-        <a href="#contact">Contact</a>
+        <a href="admin.html">Admin</a>
+        <a href="index.html#footer">Contact</a>
       </nav>
       <div class="mobile-actions">
         <button class="btn btn-ghost theme-toggle" type="button" aria-label="Toggle dark mode">Dark Mode</button>
@@ -51,6 +52,15 @@
       </div>
     </div>
   </header>
+
+  <div id="connectOverlay" class="connect-overlay" aria-hidden="true">
+    <div class="connect-card" role="dialog" aria-labelledby="connectTitle" aria-modal="true">
+      <p class="connect-eyebrow">Wallet Required</p>
+      <h2 id="connectTitle">Connect your wallet to view your portfolio</h2>
+      <p class="connect-sub">Your dashboard will unlock once a wallet is connected.</p>
+      <button class="btn btn-ghost connect-cta wallet-btn" type="button" data-wallet="metamask">MetaMask</button>
+    </div>
+  </div>
 
   <main class="dashboard-main">
     <section id="summary" class="summary-grid">
