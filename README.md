@@ -71,12 +71,6 @@ I enjoy building practical applications that solve real-world problems and conti
 
 ---
 
-## 📄 License
-
-This project is created for educational and demonstration purposes.
-
----
-
 ## ⭐ Support
 
 If you found this project helpful, feel free to give it a star on GitHub.
